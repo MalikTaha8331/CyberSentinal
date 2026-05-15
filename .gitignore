@@ -1,9 +1,5 @@
-# Large dataset files
+# Raw datasets only (too large)
 data/raw/
-data/processed/
-
-# Saved ML models
-models/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
