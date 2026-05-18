@@ -192,7 +192,7 @@ def process_packet(packet):
     except Exception as e:
         pass
 
-def start_sniffing(interface=None):
+def start_sniffing(interface="None"):
     """Start live packet capture"""
     print("🚀 AI-IDS Live Sniffer Starting...")
     print("📊 Dashboard: http://127.0.0.1:5000")
@@ -215,3 +215,5 @@ def start_sniffing(interface=None):
 
 if __name__ == '__main__':
     start_sniffing()
+    
+    # Instead of this:
