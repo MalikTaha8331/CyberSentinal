@@ -18,8 +18,9 @@
 
     <!-- Nav -->
     <div class="nav-bar">
-        <a href="/" class="nav-btn active">🛡️ Main Dashboard</a>
-        <a href="/live" class="nav-btn">📡 Live Traffic</a>
+        <a href="/"        class="nav-btn active">🛡️ Main Dashboard</a>
+        <a href="/live"    class="nav-btn">📡 Live Traffic</a>
+        <a href="/history" class="nav-btn">📋 History</a>
     </div>
 
     <!-- Stats Cards -->
@@ -86,11 +87,36 @@
     <!-- Alerts Table -->
     <div class="alerts-section">
         <h3>🚨 Recent Alerts</h3>
+
+        <!-- Search & Filter Bar -->
+        <div class="search-bar">
+            <input type="text" id="search-input"
+                   placeholder="🔍 Search by IP, attack type, protocol..."
+                   onkeyup="searchAlerts()">
+            <select id="filter-cat" onchange="searchAlerts()">
+                <option value="">All Categories</option>
+                <option value="NORMAL">Normal</option>
+                <option value="SUSPICIOUS">Suspicious</option>
+                <option value="MODERATE THREAT">Moderate Threat</option>
+                <option value="SEVERE THREAT">Severe Threat</option>
+            </select>
+            <select id="filter-proto" onchange="searchAlerts()">
+                <option value="">All Protocols</option>
+                <option value="tcp">TCP</option>
+                <option value="udp">UDP</option>
+                <option value="icmp">ICMP</option>
+            </select>
+            <button onclick="clearSearch()" class="btn-auto">
+                🔄 Clear
+            </button>
+        </div>
+
         <table>
             <thead>
                 <tr>
                     <th>Time</th>
                     <th>Category</th>
+                    <th>Attack Type</th>
                     <th>Confidence</th>
                     <th>Protocol</th>
                     <th>Src IP</th>
@@ -269,7 +295,9 @@
     const src_ip      = result.src_ip      || 'N/A';
     const description = result.description || 'N/A';
     const color       = result.color       || 'gray';
-    const protocol    = result.protocol    || 'tcp';
+    const protocol    = result.protocol    || result.protocol_type || 'tcp';
+    const attack_type = result.attack_type || 'Unknown';
+    const attack_icon = result.attack_icon || '🔍';
 
     const blockBtn = result.show_block
         ? `<button class="btn-block-sm" onclick="manualBlock('${src_ip}', ${confidence})">
@@ -284,6 +312,7 @@
     row.innerHTML = `
         <td>${new Date().toLocaleTimeString()}</td>
         <td><span class="badge badge-${color}">${category}</span></td>
+        <td>${attack_icon} ${attack_type}</td>
         <td>${confidence}%</td>
         <td>${protocol}</td>
         <td>${src_ip}</td>
@@ -514,6 +543,44 @@
                 }, 1500);
                 document.getElementById('auto-btn').textContent = '⏹ Stop Auto Simulation';
             }
+        }
+
+        // ─── Search & Filter ──────────────────────────────
+        function searchAlerts() {
+            const search   = document.getElementById('search-input').value.toLowerCase();
+            const category = document.getElementById('filter-cat').value.toLowerCase();
+            const protocol = document.getElementById('filter-proto').value.toLowerCase();
+            const tbody    = document.getElementById('alerts-table');
+            const rows     = tbody.getElementsByTagName('tr');
+
+            let visibleCount = 0;
+
+            for (let row of rows) {
+                const text = row.textContent.toLowerCase();
+                const matchSearch   = !search   || text.includes(search);
+                const matchCategory = !category || text.includes(category);
+                const matchProtocol = !protocol || text.includes(protocol);
+
+                if (matchSearch && matchCategory && matchProtocol) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+
+            // Show no results message
+            const noResults = document.getElementById('no-results');
+            if (noResults) {
+                noResults.style.display = visibleCount === 0 ? '' : 'none';
+            }
+        }
+
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('filter-cat').value   = '';
+            document.getElementById('filter-proto').value = '';
+            searchAlerts();
         }
     </script>
 </body>
