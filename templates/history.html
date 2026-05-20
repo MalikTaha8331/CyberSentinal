@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberSentinel — Alert History</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>⚔️ CyberSentinel — Alert History</h1>
+        <p>Complete Historical Log of All Security Events</p>
+        <span id="clock"></span>
+        <a href="/logout" class="logout-btn">🚪 Logout</a>
+    </div>
+
+    <!-- Nav -->
+    <div class="nav-bar">
+        <a href="/"        class="nav-btn">🛡️ Dashboard</a>
+        <a href="/live"    class="nav-btn">📡 Live Traffic</a>
+        <a href="/history" class="nav-btn active">📋 History</a>
+    </div>
+
+    <!-- Stats -->
+    <div class="cards" style="grid-template-columns: repeat(4,1fr)">
+        <div class="card normal">
+            <h2 id="total-normal">0</h2>
+            <p>✅ Total Normal</p>
+        </div>
+        <div class="card attack">
+            <h2 id="total-attacks">0</h2>
+            <p>🚨 Total Attacks</p>
+        </div>
+        <div class="card severe">
+            <h2 id="total-severe">0</h2>
+            <p>🔴 Total Severe</p>
+        </div>
+        <div class="card blocked">
+            <h2 id="total-blocked">0</h2>
+            <p>🚫 Total Blocked</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-section">
+        <h3>🔍 Filter History</h3>
+        <div class="filters">
+            <input type="text" id="search-input"
+                   placeholder="Search IP, attack type..."
+                   style="padding:10px 14px; background:#0d0d1a;
+                          border:1px solid #0f3460; border-radius:8px;
+                          color:#e0e0e0; min-width:250px; outline:none;">
+            <select id="filter-category">
+                <option value="">All Categories</option>
+                <option value="NORMAL">Normal</option>
+                <option value="SUSPICIOUS">Suspicious</option>
+                <option value="MODERATE THREAT">Moderate Threat</option>
+                <option value="SEVERE THREAT">Severe Threat</option>
+            </select>
+            <input type="date" id="filter-date"
+                   style="padding:10px; background:#0d0d1a;
+                          border:1px solid #0f3460; border-radius:8px;
+                          color:#e0e0e0; outline:none;">
+            <button onclick="fetchLogs()" class="btn-normal">
+                🔍 Search
+            </button>
+            <button onclick="clearFilters()" class="btn-auto">
+                🔄 Clear
+            </button>
+            <button onclick="clearAllLogs()" class="btn-attack">
+                🗑️ Clear All Logs
+            </button>
+        </div>
+    </div>
+
+    <!-- History Table -->
+    <div class="alerts-section">
+        <h3>📋 Security Event Log
+            <span id="log-count"
+                  style="font-size:0.8rem; color:#aaa; margin-left:10px;">
+                0 records
+            </span>
+        </h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Category</th>
+                    <th>Attack Type</th>
+                    <th>Confidence</th>
+                    <th>Protocol</th>
+                    <th>Src IP</th>
+                    <th>Description</th>
+                    <th>Blocked</th>
+                </tr>
+            </thead>
+            <tbody id="history-table">
+                <tr><td colspan="9" style="text-align:center">
+                    Loading logs...
+                </td></tr>
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+    <script>
+        // Clock
+        function updateClock() {
+            document.getElementById('clock').textContent =
+                new Date().toLocaleTimeString();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        let currentPage = 1;
+
+        async function fetchLogs(page = 1) {
+            currentPage      = page;
+            const search     = document.getElementById('search-input').value;
+            const category   = document.getElementById('filter-category').value;
+            const date       = document.getElementById('filter-date').value;
+
+            let url = `/logs?page=${page}&per_page=50`;
+            if (search)   url += `&search=${encodeURIComponent(search)}`;
+            if (category) url += `&category=${encodeURIComponent(category)}`;
+            if (date)     url += `&date=${date}`;
+
+            try {
+                const res  = await fetch(url);
+                const data = await res.json();
+
+                updateTable(data.logs);
+                updateStats(data.logs);
+                updatePagination(data.total_pages, page);
+
+                document.getElementById('log-count').textContent =
+                    `${data.total} records`;
+
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function updateTable(logs) {
+            const tbody = document.getElementById('history-table');
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center">No logs found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            logs.forEach(log => {
+                const row = document.createElement('tr');
+                row.className = `row-${log.color || 'gray'}`;
+                row.innerHTML = `
+                    <td>${log.date || '—'}</td>
+                    <td>${log.time}</td>
+                    <td><span class="badge badge-${log.color || 'gray'}">
+                        ${log.category}</span></td>
+                    <td>${log.attack_icon || '🔍'} ${log.attack_type || 'Unknown'}</td>
+                    <td>${log.confidence}%</td>
+                    <td>${log.protocol || 'tcp'}</td>
+                    <td><strong>${log.src_ip}</strong></td>
+                    <td style="font-size:0.8rem">${log.description}</td>
+                    <td>${log.blocked
+                        ? '<span class="auto-blocked-badge">🚫 Yes</span>'
+                        : '—'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateStats(logs) {
+            document.getElementById('total-normal').textContent =
+                logs.filter(l => l.category === 'NORMAL').length;
+            document.getElementById('total-attacks').textContent =
+                logs.filter(l => l.category !== 'NORMAL').length;
+            document.getElementById('total-severe').textContent =
+                logs.filter(l => l.category === 'SEVERE THREAT').length;
+            document.getElementById('total-blocked').textContent =
+                logs.filter(l => l.blocked).length;
+        }
+
+        function updatePagination(totalPages, current) {
+            const div = document.getElementById('pagination');
+            div.innerHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className   = i === current ? 'btn-normal' : 'btn-auto';
+                btn.style.margin = '4px';
+                btn.style.padding = '6px 12px';
+                btn.onclick = () => fetchLogs(i);
+                div.appendChild(btn);
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('search-input').value   = '';
+            document.getElementById('filter-category').value = '';
+            document.getElementById('filter-date').value    = '';
+            fetchLogs();
+        }
+
+        async function clearAllLogs() {
+            if (!confirm('Are you sure you want to clear all logs?')) return;
+            await fetch('/logs/clear', { method: 'POST' });
+            fetchLogs();
+        }
+
+        // Load logs on page open
+        fetchLogs();
+    </script>
+</body>
+</html>
