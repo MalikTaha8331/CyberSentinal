@@ -192,7 +192,7 @@ def process_packet(packet):
     except Exception as e:
         pass
 
-def start_sniffing(interface="None"):
+def start_sniffing(interface="WiFi"):
     """Start live packet capture"""
     print("🚀 AI-IDS Live Sniffer Starting...")
     print("📊 Dashboard: http://127.0.0.1:5000")
