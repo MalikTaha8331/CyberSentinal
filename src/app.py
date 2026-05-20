@@ -8,6 +8,8 @@ from auth import (check_credentials, SECRET_KEY, is_blocked,
 import time
 import os
 import logging
+import json
+from datetime import datetime
 
 app = Flask(
     __name__,
@@ -41,6 +43,33 @@ alerts      = []
 blocked_ips = {}
 live_traffic = []
 MAX_TRAFFIC  = 100000
+
+# ─── Historical Logs ──────────────────────────────
+LOGS_FILE = '../logs/alerts_history.json'
+
+def load_logs():
+    """Load historical logs from file"""
+    try:
+        if os.path.exists(LOGS_FILE):
+            with open(LOGS_FILE, 'r') as f:
+                return json.load(f)
+    except:
+        pass
+    return []
+
+def save_log(alert):
+    """Save single alert to history file"""
+    try:
+        os.makedirs('../logs', exist_ok=True)
+        history = load_logs()
+        history.append(alert)
+        # Keep last 10000 logs
+        if len(history) > 10000:
+            history = history[-10000:]
+        with open(LOGS_FILE, 'w') as f:
+            json.dump(history, f, indent=2)
+    except Exception as e:
+        print(f"Log save error: {e}")
 
 # ─── Auth Routes ──────────────────────────────────
 @app.route('/login', methods=['GET', 'POST'])
@@ -142,6 +171,15 @@ def predict():
         alerts.append(alert)
         if len(alerts) > 100:
             alerts.pop(0)
+
+        # Save to historical logs
+        log_entry = {
+            **alert,
+            'date': datetime.now().strftime('%Y-%m-%d'),
+            'attack_type': result.get('attack_type', 'Unknown'),
+            'attack_icon': result.get('attack_icon', '🔍')
+        }
+        save_log(log_entry)
 
         result['src_ip']  = src_ip
         result['blocked'] = alert['blocked']
@@ -250,6 +288,57 @@ def rate_limited(e):
 @app.errorhandler(500)
 def server_error(e):
     return jsonify({'error': 'Internal server error'}), 500
+
+# ─── Historical Logs Routes ───────────────────────
+@app.route('/history')
+def history_page():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('history.html')
+
+@app.route('/logs', methods=['GET'])
+def get_logs():
+    if not session.get('logged_in'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    history  = load_logs()
+    page     = int(request.args.get('page', 1))
+    per_page = int(request.args.get('per_page', 50))
+    category = request.args.get('category', '')
+    date     = request.args.get('date', '')
+    search   = request.args.get('search', '').lower()
+
+    # Apply filters
+    if category:
+        history = [h for h in history if h.get('category', '') == category]
+    if date:
+        history = [h for h in history if h.get('date', '') == date]
+    if search:
+        history = [h for h in history
+                   if search in str(h).lower()]
+
+    # Pagination
+    total    = len(history)
+    start    = (page - 1) * per_page
+    end      = start + per_page
+    paginated = list(reversed(history))[start:end]
+
+    return jsonify({
+        'logs':       paginated,
+        'total':      total,
+        'page':       page,
+        'per_page':   per_page,
+        'total_pages': (total + per_page - 1) // per_page
+    })
+
+@app.route('/logs/clear', methods=['POST'])
+@login_required
+def clear_logs():
+    try:
+        with open(LOGS_FILE, 'w') as f:
+            json.dump([], f)
+        return jsonify({'success': True, 'message': 'Logs cleared!'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     print("⚔️  CyberSentinel Starting...")
