@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberSentinel — Reset Password</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #05050f;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image:
+                radial-gradient(ellipse at 20% 20%, rgba(157,78,221,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(255,215,0,0.05) 0%, transparent 50%);
+        }
+
+        .container { width: 100%; max-width: 440px; padding: 20px; }
+
+        .card {
+            background: #0d0d1f;
+            border: 1px solid #9d4edd;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(157,78,221,0.2);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a0a2e, #0d0d1f);
+            padding: 28px;
+            text-align: center;
+            border-bottom: 1px solid #9d4edd;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6rem;
+            background: linear-gradient(90deg, #9d4edd, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 3px;
+            margin-bottom: 6px;
+        }
+
+        .header p { color: #8888aa; font-size: 0.82rem; letter-spacing: 2px; }
+
+        .body { padding: 30px; }
+
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            display: block;
+            text-align: center;
+        }
+
+        .body h2 {
+            font-family: 'Orbitron', monospace;
+            color: #ffd700;
+            font-size: 0.95rem;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .body > p {
+            color: #8888aa;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .form-group { margin-bottom: 18px; }
+
+        label {
+            display: block;
+            color: #9d4edd;
+            font-size: 0.78rem;
+            margin-bottom: 6px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #05050f;
+            border: 1px solid #2d1b69;
+            border-radius: 8px;
+            color: #e0e0ff;
+            font-size: 0.95rem;
+            font-family: 'Rajdhani', sans-serif;
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #9d4edd;
+            box-shadow: 0 0 10px rgba(157,78,221,0.3);
+        }
+
+        .password-strength {
+            margin-top: 6px;
+            height: 3px;
+            border-radius: 2px;
+            background: #2d1b69;
+            overflow: hidden;
+        }
+
+        .strength-bar {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s, background 0.3s;
+            width: 0%;
+        }
+
+        .strength-text {
+            font-size: 0.72rem;
+            margin-top: 4px;
+            color: #555577;
+        }
+
+        .btn-reset {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg,
+                rgba(157,78,221,0.3), rgba(255,215,0,0.2));
+            border: 1px solid #9d4edd;
+            border-radius: 8px;
+            color: #ffd700;
+            font-size: 0.9rem;
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            margin-top: 8px;
+        }
+
+        .btn-reset:hover {
+            box-shadow: 0 0 20px rgba(157,78,221,0.5);
+            transform: translateY(-2px);
+        }
+
+        .error-box {
+            background: rgba(255,34,85,0.1);
+            border: 1px solid #ff2255;
+            border-radius: 8px;
+            padding: 12px;
+            color: #ff6b8a;
+            font-size: 0.85rem;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>⚔️ CYBERSENTINEL</h1>
+                <p>RESET PASSWORD</p>
+            </div>
+            <div class="body">
+                <span class="icon">🔐</span>
+                <h2>CREATE NEW PASSWORD</h2>
+                <p>OTP verified successfully!
+                   Enter your new password below.</p>
+
+                {% if error %}
+                <div class="error-box">🚨 {{ error }}</div>
+                {% endif %}
+
+                <form method="POST" action="/reset-password">
+                    <input type="hidden"
+                           name="email" value="{{ email }}">
+                    <div class="form-group">
+                        <label>🔒 New Password</label>
+                        <input type="password"
+                               name="password"
+                               id="password"
+                               placeholder="Enter new password"
+                               oninput="checkStrength(this.value)"
+                               required>
+                        <div class="password-strength">
+                            <div class="strength-bar"
+                                 id="strength-bar"></div>
+                        </div>
+                        <div class="strength-text"
+                             id="strength-text"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>🔒 Confirm Password</label>
+                        <input type="password"
+                               name="confirm_password"
+                               placeholder="Confirm new password"
+                               required>
+                    </div>
+                    <button type="submit" class="btn-reset">
+                        ✅ Reset Password
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function checkStrength(password) {
+            const bar  = document.getElementById('strength-bar');
+            const text = document.getElementById('strength-text');
+            let strength = 0;
+
+            if (password.length >= 8)            strength++;
+            if (password.match(/[A-Z]/))         strength++;
+            if (password.match(/[0-9]/))         strength++;
+            if (password.match(/[^A-Za-z0-9]/)) strength++;
+
+            const levels = [
+                { width: '25%', color: '#ff2255', label: '⚠️ Weak' },
+                { width: '50%', color: '#ffd700', label: '🔶 Fair' },
+                { width: '75%', color: '#00e5ff', label: '🔷 Good' },
+                { width: '100%', color: '#00ff88', label: '✅ Strong' }
+            ];
+
+            if (strength > 0) {
+                const level          = levels[strength - 1];
+                bar.style.width      = level.width;
+                bar.style.background = level.color;
+                text.style.color     = level.color;
+                text.textContent     = level.label;
+            } else {
+                bar.style.width  = '0%';
+                text.textContent = '';
+            }
+        }
+    </script>
+</body>
+</html>

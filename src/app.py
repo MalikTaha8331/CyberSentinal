@@ -75,6 +75,12 @@ def save_log(alert):
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")
 def login():
+    from user_store import is_setup_done, verify_user
+
+    # Redirect to setup if not done yet
+    if not is_setup_done():
+        return redirect(url_for('setup'))
+
     if session.get('logged_in'):
         return redirect(url_for('index'))
 
@@ -91,7 +97,7 @@ def login():
             error = 'Too many failed attempts! You are blocked for 5 minutes.'
             logging.warning(f"Blocked IP tried to login: {ip}")
 
-        elif check_credentials(username, password):
+        elif verify_user(username, password):
             session['logged_in'] = True
             session['username']  = username
             logging.warning(f"Successful login | IP: {ip} | User: {username}")
@@ -275,6 +281,154 @@ def get_traffic():
                     if t.get('category', '').lower() == category.lower()]
 
     return jsonify(filtered[-500:])
+
+# ─── Setup Wizard ─────────────────────────────────
+@app.route('/setup', methods=['GET', 'POST'])
+def setup():
+    from user_store import is_setup_done, save_user
+    from mailer import send_welcome_email
+
+    # If already setup redirect to login
+    if is_setup_done():
+        return redirect(url_for('login'))
+
+    error = None
+
+    if request.method == 'POST':
+        name             = request.form.get('name', '').strip()
+        email            = request.form.get('email', '').strip()
+        username         = request.form.get('username', '').strip()
+        password         = request.form.get('password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+
+        # Validate inputs
+        if not all([name, email, username, password, confirm_password]):
+            error = 'All fields are required!'
+        elif password != confirm_password:
+            error = 'Passwords do not match!'
+        elif len(password) < 8:
+            error = 'Password must be at least 8 characters!'
+        elif len(username) < 3:
+            error = 'Username must be at least 3 characters!'
+        else:
+            # Save user
+            if save_user(username, password, email, name):
+                # Send welcome email
+                send_welcome_email(email, username)
+                session['logged_in'] = True
+                session['username']  = username
+                print(f"✅ Setup complete! User: {username}")
+                return redirect(url_for('index'))
+            else:
+                error = 'Failed to save user — please try again!'
+
+    return render_template('setup.html', error=error)
+
+# ─── Forgot Password ──────────────────────────────
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    from user_store import get_email, load_user
+    from mailer import send_otp_email, generate_otp, store_otp
+
+    error   = None
+    success = None
+
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        stored_email = get_email()
+
+        if not email:
+            error = 'Please enter your email address!'
+        elif email != stored_email:
+            error = 'Email not found in our records!'
+        else:
+            # Generate and send OTP
+            otp      = generate_otp()
+            store_otp(email, otp)
+            user     = load_user()
+            username = user['username'] if user else 'User'
+
+            sent, msg = send_otp_email(email, username, otp)
+            if sent:
+                success = f'OTP sent to {email}!'
+                return render_template('otp.html',
+                                       email=email,
+                                       error=None,
+                                       success=None)
+            else:
+                error = f'Failed to send OTP: {msg}'
+
+    return render_template('forgot.html',
+                           error=error,
+                           success=success)
+
+# ─── OTP Verification ─────────────────────────────
+@app.route('/verify-otp', methods=['POST'])
+def verify_otp():
+    from mailer import verify_otp as check_otp
+
+    email = request.form.get('email', '').strip()
+    otp   = request.form.get('otp', '').strip()
+
+    if not email or not otp:
+        return render_template('otp.html',
+                               email=email,
+                               error='Please enter the OTP!',
+                               success=None)
+
+    valid, msg = check_otp(email, otp)
+
+    if valid:
+        session['otp_verified'] = True
+        session['reset_email']  = email
+        return render_template('reset.html',
+                               email=email,
+                               error=None)
+    else:
+        return render_template('otp.html',
+                               email=email,
+                               error=msg,
+                               success=None)
+
+# ─── Reset Password ───────────────────────────────
+@app.route('/reset-password', methods=['POST'])
+def reset_password():
+    from user_store import update_password
+
+    # Must have verified OTP first
+    if not session.get('otp_verified'):
+        return redirect(url_for('forgot_password'))
+
+    email            = request.form.get('email', '').strip()
+    password         = request.form.get('password', '').strip()
+    confirm_password = request.form.get('confirm_password', '').strip()
+
+    if not password or not confirm_password:
+        return render_template('reset.html',
+                               email=email,
+                               error='All fields are required!')
+
+    if password != confirm_password:
+        return render_template('reset.html',
+                               email=email,
+                               error='Passwords do not match!')
+
+    if len(password) < 8:
+        return render_template('reset.html',
+                               email=email,
+                               error='Password must be at least 8 characters!')
+
+    success, msg = update_password(email, password)
+
+    if success:
+        session.pop('otp_verified', None)
+        session.pop('reset_email',  None)
+        print(f"✅ Password reset for {email}")
+        return redirect(url_for('login'))
+    else:
+        return render_template('reset.html',
+                               email=email,
+                               error=msg)
 
 # ─── Error Handlers ───────────────────────────────
 @app.errorhandler(404)

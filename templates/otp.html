@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberSentinel — OTP Verification</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #05050f;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image:
+                radial-gradient(ellipse at 20% 20%, rgba(157,78,221,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(255,215,0,0.05) 0%, transparent 50%);
+        }
+
+        .container { width: 100%; max-width: 440px; padding: 20px; }
+
+        .card {
+            background: #0d0d1f;
+            border: 1px solid #9d4edd;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(157,78,221,0.2);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a0a2e, #0d0d1f);
+            padding: 28px;
+            text-align: center;
+            border-bottom: 1px solid #9d4edd;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6rem;
+            background: linear-gradient(90deg, #9d4edd, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 3px;
+            margin-bottom: 6px;
+        }
+
+        .header p { color: #8888aa; font-size: 0.82rem; letter-spacing: 2px; }
+
+        .body { padding: 30px; text-align: center; }
+
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .body h2 {
+            font-family: 'Orbitron', monospace;
+            color: #ffd700;
+            font-size: 0.95rem;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .body p {
+            color: #8888aa;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .body p span { color: #9d4edd; font-weight: 700; }
+
+        /* OTP Input Boxes */
+        .otp-inputs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .otp-input {
+            width: 52px;
+            height: 60px;
+            text-align: center;
+            font-size: 1.8rem;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            background: #05050f;
+            border: 2px solid #2d1b69;
+            border-radius: 10px;
+            color: #ffd700;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .otp-input:focus {
+            border-color: #9d4edd;
+            box-shadow: 0 0 12px rgba(157,78,221,0.4);
+        }
+
+        .otp-input.filled {
+            border-color: #ffd700;
+            box-shadow: 0 0 8px rgba(255,215,0,0.3);
+        }
+
+        .timer {
+            color: #ff2255;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        .btn-verify {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg,
+                rgba(157,78,221,0.3), rgba(255,215,0,0.2));
+            border: 1px solid #9d4edd;
+            border-radius: 8px;
+            color: #ffd700;
+            font-size: 0.9rem;
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .btn-verify:hover {
+            box-shadow: 0 0 20px rgba(157,78,221,0.5);
+            transform: translateY(-2px);
+        }
+
+        .resend {
+            margin-top: 16px;
+            color: #555577;
+            font-size: 0.82rem;
+        }
+
+        .resend a {
+            color: #9d4edd;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .resend a:hover { color: #ffd700; }
+
+        .error-box {
+            background: rgba(255,34,85,0.1);
+            border: 1px solid #ff2255;
+            border-radius: 8px;
+            padding: 12px;
+            color: #ff6b8a;
+            font-size: 0.85rem;
+            margin-bottom: 18px;
+        }
+
+        .success-box {
+            background: rgba(0,255,136,0.1);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 12px;
+            color: #00ff88;
+            font-size: 0.85rem;
+            margin-bottom: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>⚔️ CYBERSENTINEL</h1>
+                <p>OTP VERIFICATION</p>
+            </div>
+            <div class="body">
+                <span class="icon">📧</span>
+                <h2>CHECK YOUR EMAIL</h2>
+                <p>We sent a 6-digit verification code to
+                   <span>{{ email }}</span>.
+                   Enter it below to reset your password.</p>
+
+                {% if error %}
+                <div class="error-box">🚨 {{ error }}</div>
+                {% endif %}
+
+                {% if success %}
+                <div class="success-box">✅ {{ success }}</div>
+                {% endif %}
+
+                <form method="POST" action="/verify-otp">
+                    <input type="hidden" name="email" value="{{ email }}">
+
+                    <!-- 6 OTP input boxes -->
+                    <div class="otp-inputs">
+                        <input type="text" class="otp-input"
+                               maxlength="1" id="otp1"
+                               oninput="moveNext(this, 'otp2')"
+                               onkeydown="movePrev(event, null)">
+                        <input type="text" class="otp-input"
+                               maxlength="1" id="otp2"
+                               oninput="moveNext(this, 'otp3')"
+                               onkeydown="movePrev(event, 'otp1')">
+                        <input type="text" class="otp-input"
+                               maxlength="1" id="otp3"
+                               oninput="moveNext(this, 'otp4')"
+                               onkeydown="movePrev(event, 'otp2')">
+                        <input type="text" class="otp-input"
+                               maxlength="1" id="otp4"
+                               oninput="moveNext(this, 'otp5')"
+                               onkeydown="movePrev(event, 'otp3')">
+                        <input type="text" class="otp-input"
+                               maxlength="1" id="otp5"
+                               oninput="moveNext(this, 'otp6')"
+                               onkeydown="movePrev(event, 'otp4')">
+                        <input type="text" class="otp-input"
+                               maxlength="1" id="otp6"
+                               oninput="combineOTP()"
+                               onkeydown="movePrev(event, 'otp5')">
+                    </div>
+
+                    <!-- Hidden combined OTP -->
+                    <input type="hidden" name="otp" id="otp-combined">
+
+                    <div class="timer" id="timer">⏱️ 05:00</div>
+
+                    <button type="submit" class="btn-verify">
+                        ✅ Verify OTP
+                    </button>
+                </form>
+
+                <div class="resend">
+                    Didn't receive it?
+                    <a href="/forgot-password">Resend OTP</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ─── OTP Input Navigation ──────────────────────
+        function moveNext(current, nextId) {
+            if (current.value.length === 1) {
+                current.classList.add('filled');
+                if (nextId) document.getElementById(nextId).focus();
+                combineOTP();
+            } else {
+                current.classList.remove('filled');
+            }
+        }
+
+        function movePrev(event, prevId) {
+            if (event.key === 'Backspace' && event.target.value === '') {
+                if (prevId) document.getElementById(prevId).focus();
+            }
+        }
+
+        function combineOTP() {
+            const otp = ['otp1','otp2','otp3','otp4','otp5','otp6']
+                .map(id => document.getElementById(id).value)
+                .join('');
+            document.getElementById('otp-combined').value = otp;
+        }
+
+        // ─── Countdown Timer ───────────────────────────
+        let seconds = 300;
+        const timer = document.getElementById('timer');
+
+        const countdown = setInterval(() => {
+            seconds--;
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            timer.textContent = `⏱️ ${m}:${s}`;
+            if (seconds <= 0) {
+                clearInterval(countdown);
+                timer.textContent = '❌ OTP Expired';
+                timer.style.color = '#ff2255';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
