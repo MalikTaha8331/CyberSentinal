@@ -6,6 +6,11 @@
     <title>CyberSentinel — Live Traffic Monitor</title>
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        .traffic-row { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        .debug-box { background: #080818; border: 1px solid #2d1b69; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-family: monospace; font-size: 12px; color: #8888aa; }
+    </style>
 </head>
 <body>
 
@@ -14,60 +19,61 @@
         <h1>⚔️ CyberSentinel — Live Traffic Monitor</h1>
         <p>Real-Time Packet Analysis | AI-Powered Classification</p>
         <span id="clock"></span>
+        <a href="/logout" class="logout-btn">Logout</a>
     </div>
 
     <!-- Nav -->
     <div class="nav-bar">
-        <a href="/"        class="nav-btn">🛡️ Main Dashboard</a>
-        <a href="/live"    class="nav-btn active">📡 Live Traffic</a>
-        <a href="/history" class="nav-btn">📋 History</a>
+        <a href="/"        class="nav-btn">Dashboard</a>
+        <a href="/live"    class="nav-btn active">Live Traffic</a>
+        <a href="/history" class="nav-btn">History</a>
     </div>
 
     <!-- Stats Row -->
     <div class="cards" style="grid-template-columns: repeat(5, 1fr)">
         <div class="card normal">
             <h2 id="cnt-normal">0</h2>
-            <p>✅ Normal</p>
+            <p>Normal</p>
         </div>
         <div class="card severe">
             <h2 id="cnt-severe">0</h2>
-            <p>🔴 Severe</p>
+            <p>Severe</p>
         </div>
         <div class="card moderate">
             <h2 id="cnt-moderate">0</h2>
-            <p>🟡 Moderate</p>
+            <p>Moderate</p>
         </div>
         <div class="card suspicious">
             <h2 id="cnt-suspicious">0</h2>
-            <p>⚪ Suspicious</p>
+            <p>Suspicious</p>
         </div>
         <div class="card total">
             <h2 id="cnt-total">0</h2>
-            <p>🔍 Total Packets</p>
+            <p>Total Packets</p>
         </div>
     </div>
 
     <!-- Charts Row -->
     <div class="charts-row">
         <div class="chart-box">
-            <h3>📊 Live Packet Rate</h3>
+            <h3>Live Packet Rate</h3>
             <canvas id="packetChart"></canvas>
         </div>
         <div class="chart-box">
-            <h3>🥧 Protocol Breakdown</h3>
+            <h3>Protocol Breakdown</h3>
             <canvas id="protoChart"></canvas>
         </div>
     </div>
 
     <!-- Filters -->
     <div class="filter-section">
-        <h3>🔍 Filter Traffic</h3>
+        <h3>Filter Traffic</h3>
         <div class="filters">
             <select id="filter-protocol" onchange="applyFilters()">
                 <option value="">All Protocols</option>
-                <option value="tcp">TCP</option>
-                <option value="udp">UDP</option>
-                <option value="icmp">ICMP</option>
+                <option value="TCP">TCP</option>
+                <option value="UDP">UDP</option>
+                <option value="ICMP">ICMP</option>
             </select>
             <select id="filter-service" onchange="applyFilters()">
                 <option value="">All Services</option>
@@ -77,64 +83,68 @@
                 <option value="smtp">SMTP</option>
                 <option value="private">Private</option>
                 <option value="domain">DNS</option>
-                <option value="telnet">Telnet</option>
-                <option value="ecr_i">ICMP Echo</option>
+                <option value="http_443">HTTPS</option>
             </select>
             <select id="filter-category" onchange="applyFilters()">
                 <option value="">All Categories</option>
-                <option value="normal">Normal</option>
-                <option value="suspicious">Suspicious</option>
-                <option value="moderate threat">Moderate Threat</option>
-                <option value="severe threat">Severe Threat</option>
+                <option value="NORMAL">Normal</option>
+                <option value="SUSPICIOUS">Suspicious</option>
+                <option value="MODERATE THREAT">Moderate Threat</option>
+                <option value="SEVERE THREAT">Severe Threat</option>
             </select>
-            <button onclick="clearFilters()" class="btn-auto">
-                🔄 Clear Filters
-            </button>
-            <button onclick="togglePause()" class="btn-attack" id="pause-btn">
-                ⏸ Pause
-            </button>
+            <button onclick="clearFilters()" class="btn-auto">Clear Filters</button>
+            <button onclick="togglePause()" class="btn-attack" id="pause-btn">Pause</button>
         </div>
     </div>
 
     <!-- Live Traffic Table -->
     <div class="alerts-section">
-        <h3>📋 Live Traffic Feed
-            <span id="packet-count" style="font-size:0.8rem; color:#aaa; margin-left:10px;">
-                0 packets
+        <h3>Live Traffic Feed
+            <span id="packet-count" style="font-size:0.8rem; color:#aaa; margin-left:10px;">0 packets</span>
+            <span style="display:inline-block; margin-left:16px; vertical-align:middle; width:150px;">
+                <div style="background:#2d1b69; border-radius:4px; height:8px; width:150px; overflow:hidden;">
+                    <div id="buffer-bar" style="background:#9d4edd; height:8px; width:0%; transition:width 0.3s; border-radius:4px;"></div>
+                </div>
+                <span id="buffer-text" style="font-size:0.7rem; color:#8888aa;">0/400</span>
             </span>
         </h3>
-        <table>
+
+        <table id="main-traffic-table">
             <thead>
                 <tr>
                     <th>Time</th>
-                    <th>Src IP</th>
-                    <th>Protocol</th>
-                    <th>Service</th>
-                    <th>Port/Flag</th>
-                    <th>Bytes</th>
-                    <th>Category</th>
-                    <th>Confidence</th>
-                    <th>Status</th>
+<th>Source IP</th>
+<th>Country</th>
+<th>Protocol</th>
+<th>Service</th>
+<th>Flag</th>
+<th>Bytes</th>
+<th>Category</th>
+<th>Confidence</th>
+<th>Status</th>
                 </tr>
             </thead>
             <tbody id="traffic-table">
-                <tr><td colspan="9" style="text-align:center">
-                    Waiting for traffic... Start sniffer.py to see live data
-                </td></tr>
+                <tr id="empty-row">
+                    <td colspan="10" style="text-align:center; color:#8888aa; padding:30px;">
+
+                        Waiting for traffic... Start sniffer to capture packets
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
 
+
     <script>
         // ─── Clock ────────────────────────────────────────────
         function updateClock() {
-            document.getElementById('clock').textContent =
-                new Date().toLocaleTimeString();
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString();
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        // ─── Charts ───────────────────────────────────────────
+        // ─── Charts Setup ─────────────────────────────────────
         const packetCtx = document.getElementById('packetChart').getContext('2d');
         const protoCtx  = document.getElementById('protoChart').getContext('2d');
 
@@ -143,10 +153,10 @@
             data: {
                 labels: [],
                 datasets: [
-                    { label: 'Normal',   data: [], borderColor: '#00e676', tension: 0.4, fill: false },
-                    { label: 'Severe',   data: [], borderColor: '#ff1744', tension: 0.4, fill: false },
-                    { label: 'Moderate', data: [], borderColor: '#ffd740', tension: 0.4, fill: false },
-                    { label: 'Suspicious', data: [], borderColor: '#aaa',  tension: 0.4, fill: false }
+                    { label: 'Normal',     data: [], borderColor: '#00e676', tension: 0.4, fill: false },
+                    { label: 'Severe',     data: [], borderColor: '#ff1744', tension: 0.4, fill: false },
+                    { label: 'Moderate',   data: [], borderColor: '#ffd740', tension: 0.4, fill: false },
+                    { label: 'Suspicious', data: [], borderColor: '#aaa',    tension: 0.4, fill: false }
                 ]
             },
             options: {
@@ -178,145 +188,196 @@
         });
 
         // ─── State ────────────────────────────────────────────
-        let paused   = false;
-        let counts   = { normal: 0, severe: 0, moderate: 0, suspicious: 0 };
-        let protoCounts = { TCP: 0, UDP: 0, ICMP: 0 };
-        let lineData = { normal: [], severe: [], moderate: [], suspicious: [] };
-        let lineLabels = [];
-        let lastCount  = 0;
+        let paused       = false;
+        let allData      = [];
+        let lastCount    = -1;
+        let lineLabels   = [];
+        let lineData     = { normal: [], severe: [], moderate: [], suspicious: [] };
+        let protoCounts  = { TCP: 0, UDP: 0, ICMP: 0 };
 
         // ─── Filters ──────────────────────────────────────────
-        function applyFilters() { fetchTraffic(); }
+        function applyFilters() { renderTable(); }
 
         function clearFilters() {
             document.getElementById('filter-protocol').value = '';
             document.getElementById('filter-service').value  = '';
             document.getElementById('filter-category').value = '';
-            lastCount = -1; // Force refresh
-            fetchTraffic();
+            renderTable();
         }
 
         function togglePause() {
             paused = !paused;
-            document.getElementById('pause-btn').textContent =
-                paused ? '▶ Resume' : '⏸ Pause';
+            document.getElementById('pause-btn').textContent = paused ? 'Resume' : 'Pause';
         }
 
         // ─── Fetch Traffic ────────────────────────────────────
         async function fetchTraffic() {
             if (paused) return;
 
-            const protocol = document.getElementById('filter-protocol').value;
-            const service  = document.getElementById('filter-service').value;
-            const category = document.getElementById('filter-category').value;
-
-            let url = '/traffic?';
-            if (protocol) url += `protocol=${protocol}&`;
-            if (service)  url += `service=${service}&`;
-            if (category) url += `category=${category}&`;
-
             try {
-                const res  = await fetch(url);
-                const data = await res.json();
+                const res  = await fetch('/traffic');
+                const json = await res.json();
 
-                if (data.length === lastCount && !protocol && !service && !category) return;
-                lastCount = data.length;
+                // Handle response format
+                const packets = json.data  !== undefined ? json.data  : (Array.isArray(json) ? json : []);
+                const count   = json.count !== undefined ? json.count : packets.length;
+                const max     = json.max   !== undefined ? json.max   : 400;
 
-                updateTable(data);
-                updateStats(data);
-                updateCharts(data);
+                // Update buffer bar
+                const pct = Math.round((count / max) * 100);
+                document.getElementById('buffer-bar').style.width      = pct + '%';
+                document.getElementById('buffer-bar').style.background = pct > 80 ? '#ff2255' : pct > 50 ? '#ffd700' : '#9d4edd';
+                document.getElementById('buffer-text').textContent     = count + '/' + max;
+                document.getElementById('packet-count').textContent    = count + ' packets';
 
-            } catch (e) { console.error(e); }
+                // Only update if data changed
+                if (count === lastCount) return;
+                lastCount = count;
+
+                // Store data
+                allData = packets;
+
+                // Update stats and charts
+                updateStats(packets);
+                updateCharts(packets);
+
+                // Render table
+                renderTable();
+
+            } catch(e) {
+                console.error('fetchTraffic error:', e);
+            }
         }
 
-        // ─── Update Table ─────────────────────────────────────
-        function updateTable(data) {
-            const tbody = document.getElementById('traffic-table');
-            tbody.innerHTML = '';
+        // ─── Render Table with Filters ────────────────────────
+        function renderTable() {
+            const protocol = document.getElementById('filter-protocol').value.toUpperCase();
+            const service  = document.getElementById('filter-service').value.toLowerCase();
+            const category = document.getElementById('filter-category').value.toLowerCase();
 
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center">No matching traffic...</td></tr>';
+            // Apply filters
+            let filtered = allData.filter(t => {
+                const matchProto = !protocol || (t.protocol || '').toUpperCase() === protocol;
+                const matchSvc   = !service  || (t.service  || '').toLowerCase() === service;
+                const matchCat   = !category || (t.category || '').toLowerCase() === category;
+                return matchProto && matchSvc && matchCat;
+            });
+
+            const tbody = document.getElementById('traffic-table');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#8888aa; padding:30px;">' +
+                    (allData.length === 0 ? 'Waiting for traffic... Start sniffer' : 'No packets match filters') +
+                    '</td></tr>';
                 return;
             }
 
             // Show newest first
-            [...data].reverse().forEach(t => {
-                const row = document.createElement('tr');
-                row.className = `row-${t.color || 'gray'}`;
-                const status = t.blocked
-                    ? '<span class="auto-blocked-badge">🚫 Blocked</span>'
-                    : `<span class="badge badge-${t.color || 'gray'}">${t.category}</span>`;
+            const toShow = [...filtered].reverse().slice(0, 100);
 
-                row.innerHTML = `
-                    <td>${t.time}</td>
-                    <td><strong>${t.src_ip}</strong></td>
-                    <td><span class="proto-badge proto-${t.protocol?.toLowerCase()}">${t.protocol}</span></td>
-                    <td>${t.service}</td>
-                    <td>${t.flag || '—'}</td>
-                    <td>${t.src_bytes} B</td>
-                    <td>${status}</td>
-                    <td>${t.confidence}%</td>
-                    <td>${t.blocked ? '🚫' : t.color === 'green' ? '✅' : '⚠️'}</td>
-                `;
-                tbody.appendChild(row);
+            tbody.innerHTML = '';
+            toShow.forEach(t => {
+                const color    = t.color      || 'gray';
+                const category = t.category   || 'UNKNOWN';
+                const proto    = (t.protocol  || 'TCP').toUpperCase();
+                const protoLow = proto.toLowerCase();
+                const ip       = t.src_ip     || 'N/A';
+                const svc      = t.service    || '—';
+                const flag     = t.flag       || '—';
+                const bytes    = t.src_bytes  !== undefined ? t.src_bytes + ' B' : '—';
+                const conf     = t.confidence !== undefined ? t.confidence + '%' : '—';
+                const timeStr  = t.time       || '—';
+
+                const catBadge = t.blocked
+                    ? '<span class="auto-blocked-badge">BLOCKED</span>'
+                    : '<span class="badge badge-' + color + '">' + category + '</span>';
+
+                const statusColor = color === 'green' ? '#00ff88' : color === 'red' ? '#ff2255' : color === 'yellow' ? '#ffd700' : '#aaa';
+                const statusText  = t.blocked ? 'BLOCKED' : color === 'green' ? 'OK' : 'ALERT';
+
+                const tr = document.createElement('tr');
+                tr.className = 'row-' + color + ' traffic-row';
+                tr.innerHTML =
+                    '<td data-label="Time">' + timeStr + '</td>' +
+                    '<td data-label="Source IP"><strong style="color:#00E5FF">' + ip + '</strong></td>' +
+                    '<td data-label="Country">' + (t.country || '—') + '</td>' +
+                    '<td data-label="Protocol"><span class="proto-badge proto-' + protoLow + '">' + proto + '</span></td>' +
+                    '<td data-label="Service">' + svc + '</td>' +
+                    '<td data-label="Flag">' + flag + '</td>' +
+                    '<td data-label="Bytes">' + bytes + '</td>' +
+                    '<td data-label="Category">' + catBadge + '</td>' +
+                    '<td data-label="Confidence">' + conf + '</td>' +
+                    '<td data-label="Status"><span style="color:' + statusColor + '">' + statusText + '</span></td>';
+
+                tbody.appendChild(tr);
+
             });
-
-            document.getElementById('packet-count').textContent =
-                `${data.length} packets`;
         }
 
-        // ─── Update Stats ─────────────────────────────────────
-        function updateStats(data) {
-            counts = { normal: 0, severe: 0, moderate: 0, suspicious: 0 };
+        // ─── Update Stats Cards ───────────────────────────────
+        function updateStats(packets) {
+            let normal = 0, severe = 0, moderate = 0, suspicious = 0;
             protoCounts = { TCP: 0, UDP: 0, ICMP: 0 };
 
-            data.forEach(t => {
-                const cat = (t.category || '').toUpperCase();
-                if      (cat === 'NORMAL')         counts.normal++;
-                else if (cat === 'SEVERE THREAT')  counts.severe++;
-                else if (cat === 'MODERATE THREAT') counts.moderate++;
-                else if (cat === 'SUSPICIOUS')     counts.suspicious++;
-
+            packets.forEach(t => {
+                const cat   = (t.category || '').toUpperCase();
                 const proto = (t.protocol || '').toUpperCase();
+
+                if      (cat === 'NORMAL')          normal++;
+                else if (cat === 'SEVERE THREAT')   severe++;
+                else if (cat === 'MODERATE THREAT') moderate++;
+                else if (cat === 'SUSPICIOUS')      suspicious++;
+
                 if (protoCounts[proto] !== undefined) protoCounts[proto]++;
             });
 
-            document.getElementById('cnt-normal').textContent    = counts.normal;
-            document.getElementById('cnt-severe').textContent    = counts.severe;
-            document.getElementById('cnt-moderate').textContent  = counts.moderate;
-            document.getElementById('cnt-suspicious').textContent = counts.suspicious;
-            document.getElementById('cnt-total').textContent     =
-                counts.normal + counts.severe + counts.moderate + counts.suspicious;
+            document.getElementById('cnt-normal').textContent    = normal;
+            document.getElementById('cnt-severe').textContent    = severe;
+            document.getElementById('cnt-moderate').textContent  = moderate;
+            document.getElementById('cnt-suspicious').textContent = suspicious;
+            document.getElementById('cnt-total').textContent     = packets.length;
         }
 
         // ─── Update Charts ────────────────────────────────────
-        function updateCharts(data) {
+        function updateCharts(packets) {
             const t = new Date().toLocaleTimeString();
             lineLabels.push(t);
-            lineData.normal.push(counts.normal);
-            lineData.severe.push(counts.severe);
-            lineData.moderate.push(counts.moderate);
-            lineData.suspicious.push(counts.suspicious);
+
+            let normal = 0, severe = 0, moderate = 0, suspicious = 0;
+            packets.forEach(p => {
+                const cat = (p.category || '').toUpperCase();
+                if      (cat === 'NORMAL')          normal++;
+                else if (cat === 'SEVERE THREAT')   severe++;
+                else if (cat === 'MODERATE THREAT') moderate++;
+                else if (cat === 'SUSPICIOUS')      suspicious++;
+            });
+
+            lineData.normal.push(normal);
+            lineData.severe.push(severe);
+            lineData.moderate.push(moderate);
+            lineData.suspicious.push(suspicious);
 
             if (lineLabels.length > 15) {
                 lineLabels.shift();
-                Object.values(lineData).forEach(arr => arr.shift());
+                lineData.normal.shift();
+                lineData.severe.shift();
+                lineData.moderate.shift();
+                lineData.suspicious.shift();
             }
 
-            packetChart.data.labels          = lineLabels;
-            packetChart.data.datasets[0].data = lineData.normal;
-            packetChart.data.datasets[1].data = lineData.severe;
-            packetChart.data.datasets[2].data = lineData.moderate;
-            packetChart.data.datasets[3].data = lineData.suspicious;
+            packetChart.data.labels             = lineLabels;
+            packetChart.data.datasets[0].data   = lineData.normal;
+            packetChart.data.datasets[1].data   = lineData.severe;
+            packetChart.data.datasets[2].data   = lineData.moderate;
+            packetChart.data.datasets[3].data   = lineData.suspicious;
             packetChart.update();
 
-            protoChart.data.datasets[0].data =
-                [protoCounts.TCP, protoCounts.UDP, protoCounts.ICMP];
+            protoChart.data.datasets[0].data = [protoCounts.TCP, protoCounts.UDP, protoCounts.ICMP];
             protoChart.update();
         }
 
-        // Refresh every 1.5 seconds
-        setInterval(fetchTraffic, 1500);
+        // ─── Start Polling ────────────────────────────────────
+        setInterval(fetchTraffic, 2000);
         fetchTraffic();
     </script>
 </body>

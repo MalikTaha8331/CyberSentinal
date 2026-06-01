@@ -266,3 +266,100 @@ def send_welcome_email(to_email, username):
     except Exception as e:
         print(f"❌ Welcome email error: {e}")
         return False
+
+
+def send_attack_alert(to_email, username, attack_data):
+    """Send immediate email alert when severe attack detected"""
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'SEVERE THREAT DETECTED — CyberSentinel Alert'
+        msg['From']    = f'{SENDER_NAME} <{SENDER_EMAIL}>'
+        msg['To']      = to_email
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; background: #05050f; color: #e0e0ff; margin: 0; padding: 0; }}
+                .container {{ max-width: 500px; margin: 40px auto; background: #0d0d1f; border: 1px solid #ff2255; border-radius: 16px; overflow: hidden; }}
+                .header {{ background: linear-gradient(135deg, #2e0a0a, #0d0d1f); padding: 30px; text-align: center; border-bottom: 1px solid #ff2255; }}
+                .header h1 {{ color: #ff2255; font-size: 1.6rem; margin: 0; letter-spacing: 3px; }}
+                .header p  {{ color: #8888aa; margin: 8px 0 0 0; font-size: 0.85rem; }}
+                .body {{ padding: 30px; }}
+                .alert-box {{ background: rgba(255,34,85,0.1); border: 2px solid #ff2255; border-radius: 12px; padding: 20px; margin: 20px 0; }}
+                .alert-box h2 {{ color: #ff2255; margin: 0 0 16px 0; font-size: 1.2rem; }}
+                .info-row {{ display: flex; justify-content: space-between; margin: 8px 0; padding: 6px 0; border-bottom: 1px solid #2d1b69; }}
+                .info-label {{ color: #8888aa; font-size: 0.88rem; }}
+                .info-value {{ color: #ffffff; font-size: 0.88rem; font-weight: bold; }}
+                .action-box {{ background: rgba(157,78,221,0.1); border: 1px solid #9d4edd; border-radius: 8px; padding: 16px; margin-top: 20px; text-align: center; }}
+                .footer {{ background: #080818; padding: 16px; text-align: center; color: #555577; font-size: 0.75rem; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>SEVERE THREAT DETECTED</h1>
+                    <p>CyberSentinel AI-IDS/IPS — Immediate Action Required</p>
+                </div>
+                <div class="body">
+                    <p style="color:#aaaacc">Hello <strong style="color:#9d4edd">{username}</strong>,</p>
+                    <p style="color:#aaaacc">A severe threat has been detected and automatically blocked on your network!</p>
+                    <div class="alert-box">
+                        <h2>Threat Details</h2>
+                        <div class="info-row">
+                            <span class="info-label">Category:</span>
+                            <span class="info-value" style="color:#ff2255">{attack_data.get('category', 'SEVERE THREAT')}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Attack Type:</span>
+                            <span class="info-value">{attack_data.get('attack_type', 'Unknown')}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Source IP:</span>
+                            <span class="info-value" style="color:#ff2255">{attack_data.get('src_ip', 'Unknown')}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Confidence:</span>
+                            <span class="info-value">{attack_data.get('confidence', 0)}%</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Protocol:</span>
+                            <span class="info-value">{attack_data.get('protocol', 'TCP')}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Time:</span>
+                            <span class="info-value">{attack_data.get('time', 'Unknown')}</span>
+                        </div>
+                        <div class="info-row" style="border:none">
+                            <span class="info-label">Status:</span>
+                            <span class="info-value" style="color:#00ff88">AUTO-BLOCKED</span>
+                        </div>
+                    </div>
+                    <div class="action-box">
+                        <p style="color:#9d4edd; margin:0; font-weight:bold">
+                            The threat has been automatically blocked.
+                            Login to your dashboard to review and manage blocked IPs.
+                        </p>
+                    </div>
+                </div>
+                <div class="footer">
+                    CyberSentinel AI-IDS/IPS — Protecting Your Network 24/7
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html, 'html'))
+
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(SENDER_EMAIL, SENDER_PASSWORD)
+            server.sendmail(SENDER_EMAIL, to_email, msg.as_string())
+
+        print(f"Attack alert email sent to {to_email}")
+        return True
+
+    except Exception as e:
+        print(f"Attack alert email error: {e}")
+        return False

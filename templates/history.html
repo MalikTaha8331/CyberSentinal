@@ -158,19 +158,20 @@
                 const row = document.createElement('tr');
                 row.className = `row-${log.color || 'gray'}`;
                 row.innerHTML = `
-                    <td>${log.date || '—'}</td>
-                    <td>${log.time}</td>
-                    <td><span class="badge badge-${log.color || 'gray'}">
+                    <td data-label="Date">${log.date || '—'}</td>
+                    <td data-label="Time">${log.time}</td>
+                    <td data-label="Category"><span class="badge badge-${log.color || 'gray'}">
                         ${log.category}</span></td>
-                    <td>${log.attack_icon || '🔍'} ${log.attack_type || 'Unknown'}</td>
-                    <td>${log.confidence}%</td>
-                    <td>${log.protocol || 'tcp'}</td>
-                    <td><strong>${log.src_ip}</strong></td>
-                    <td style="font-size:0.8rem">${log.description}</td>
-                    <td>${log.blocked
+                    <td data-label="Attack Type">${log.attack_icon || '🔍'} ${log.attack_type || 'Unknown'}</td>
+                    <td data-label="Confidence">${log.confidence}%</td>
+                    <td data-label="Protocol">${log.protocol || 'tcp'}</td>
+                    <td data-label="Src IP"><strong>${log.src_ip}</strong></td>
+                    <td data-label="Description" style="font-size:0.8rem">${log.description}</td>
+                    <td data-label="Blocked">${log.blocked
                         ? '<span class="auto-blocked-badge">🚫 Yes</span>'
                         : '—'}</td>
                 `;
+
                 tbody.appendChild(row);
             });
         }

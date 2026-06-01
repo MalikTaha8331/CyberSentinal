@@ -1,4 +1,6 @@
-from scapy.all import sniff, IP, TCP, UDP, ICMP
+from unittest import result
+
+from scapy.all import conf, sniff, IP, TCP, UDP, ICMP
 import requests
 import time
 from collections import defaultdict
@@ -139,6 +141,43 @@ def extract_features(packet):
         print(f"Feature extraction error: {e}")
         return None
 
+import requests as req
+
+geo_cache = {}
+
+def get_geo(ip):
+    """Get country and city for an IP address"""
+    # Skip private IPs
+    private_ranges = ['192.168.', '10.', '172.', '127.', '0.']
+    for r in private_ranges:
+        if ip.startswith(r):
+            return {'country': 'Local Network', 'city': 'Private', 'flag': '🏠'}
+
+    # Check cache
+    if ip in geo_cache:
+        return geo_cache[ip]
+
+    try:
+        response = req.get(
+            f'http://ip-api.com/json/{ip}?fields=country,city,countryCode',
+            timeout=2
+        )
+        data = response.json()
+        if data.get('status') == 'success':
+            # Convert country code to flag emoji
+            code  = data.get('countryCode', '')
+            flag  = ''.join(chr(127397 + ord(c)) for c in code.upper()) if code else ''
+            result = {
+                'country': data.get('country', 'Unknown'),
+                'city':    data.get('city', 'Unknown'),
+                'flag':    flag
+            }
+            geo_cache[ip] = result
+            return result
+    except:
+        pass
+
+    return {'country': 'Unknown', 'city': 'Unknown', 'flag': ''}
 def process_packet(packet):
     """Process each captured packet"""
     features = extract_features(packet)
@@ -153,19 +192,25 @@ def process_packet(packet):
         conf     = result.get('confidence', 0)
         src_ip   = features['src_ip']
 
-        # Build traffic record
+        # Build traffic record (get GeoIP info)
+        geo = get_geo(src_ip)
+
         traffic_record = {
-            'time':      time.strftime('%H:%M:%S'),
-            'src_ip':    src_ip,
-            'protocol':  features['protocol_type'].upper(),
-            'service':   features['service'],
-            'src_bytes': features['src_bytes'],
-            'flag':      features['flag'],
-            'category':  category,
-            'confidence': conf,
-            'color':     result.get('color', 'gray'),
-            'blocked':   result.get('blocked', False)
+            'time':        time.strftime('%H:%M:%S'),
+            'src_ip':      src_ip,
+            'protocol':    features['protocol_type'].upper(),
+            'service':     features['service'],
+            'src_bytes':   features['src_bytes'],
+            'flag':        features['flag'],
+            'category':    category,
+            'confidence':  conf,
+            'color':       result.get('color', 'gray'),
+            'blocked':     result.get('blocked', False),
+            'country':     geo.get('country', 'Unknown'),
+            'city':        geo.get('city', 'Unknown'),
+            'flag_emoji':  geo.get('flag', '')
         }
+
 
         # Send to traffic endpoint
         requests.post(
@@ -192,15 +237,48 @@ def process_packet(packet):
     except Exception as e:
         pass
 
-def start_sniffing(interface="WiFi"):
+def get_best_interface():
+    """Auto-detect the best network interface"""
+    try:
+        from scapy.all import IFACES
+        import socket
+
+        # Get our local IP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+
+        print(f"🌐 Local IP detected: {local_ip}")
+
+        # Find interface matching our IP
+        for iface in IFACES.values():
+            if hasattr(iface, 'ip') and iface.ip == local_ip:
+                print(f"✅ Found interface: {iface.name}")
+                return iface.name
+
+        # Fallback — return first non-loopback interface
+        for iface in IFACES.values():
+            if hasattr(iface, 'ip') and iface.ip and \
+               not iface.ip.startswith('127.') and \
+               not iface.ip.startswith('169.'):
+                print(f"✅ Fallback interface: {iface.name}")
+                return iface.name
+
+    except Exception as e:
+        print(f"Interface detection error: {e}")
+
+    return None
+
+def start_sniffing(interface=None):
     """Start live packet capture"""
-    print("🚀 AI-IDS Live Sniffer Starting...")
-    print("📊 Dashboard: http://127.0.0.1:5000")
-    print("🔍 Capturing live network traffic...")
-    print("Press Ctrl+C to stop\n")
+    if not interface or interface == 'auto':
+        interface = get_best_interface()
+
+    print("CyberSentinel Sniffer Starting...")
+    print(f"Interface: {interface}")
 
     try:
-        # Sniff all traffic — filter out our own API calls
         sniff(
             iface=interface,
             prn=process_packet,
@@ -208,12 +286,12 @@ def start_sniffing(interface="WiFi"):
             store=0
         )
     except KeyboardInterrupt:
-        print("\n⏹ Sniffer stopped!")
+        print("\nSniffer stopped!")
     except Exception as e:
         print(f"Sniffer error: {e}")
-        print("Try running as Administrator!")
+        raise e
 
 if __name__ == '__main__':
-    start_sniffing()
-    
-    # Instead of this:
+    import sys
+    interface = sys.argv[1] if len(sys.argv) > 1 else 'auto'
+    start_sniffing(interface=interface)

@@ -652,3 +652,79 @@ select:focus {
     0%, 100% { box-shadow: 0 0 5px rgba(157,78,221,0.3); }
     50%       { box-shadow: 0 0 20px rgba(157,78,221,0.6); }
 }
+
+/* ─── Sniffer Button ─────────────────────────────────── */
+.sniffer-off {
+
+    background: rgba(255,34,85,0.15) !important;
+    color: #ff2255 !important;
+    border: 1px solid #ff2255 !important;
+    cursor: pointer;
+}
+
+.sniffer-off:hover {
+    background: rgba(255,34,85,0.3) !important;
+    box-shadow: 0 0 12px rgba(255,34,85,0.4) !important;
+}
+
+.sniffer-on {
+    background: rgba(0,255,136,0.15) !important;
+    color: #00ff88 !important;
+    border: 1px solid #00ff88 !important;
+    cursor: pointer;
+    animation: pulse-glow 2s infinite;
+}
+
+.sniffer-on:hover {
+    background: rgba(0,255,136,0.3) !important;
+    box-shadow: 0 0 12px rgba(0,255,136,0.4) !important;
+}
+
+/* ─── Mobile Responsiveness ─────────────────────────── */
+
+/* Tables: allow horizontal scroll by default */
+.table-wrap { overflow-x: auto; }
+
+table { overflow: visible; }
+
+/* Use stacked-table layout on small screens */
+@media (max-width: 768px) {
+    .cards { grid-template-columns: repeat(2, 1fr); }
+
+    .charts-row { grid-template-columns: 1fr; }
+
+    th, td { font-size: 0.85rem; padding: 10px 10px; }
+
+    /* Stacked rows */
+    table { border-collapse: separate; border-spacing: 0; }
+
+    thead { display: none; }
+
+    tbody tr { display: block; margin-bottom: 12px; border: 1px solid rgba(45,27,105,0.5); border-radius: 10px; overflow: hidden; }
+
+    tbody td { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 0; border-top: 1px solid rgba(45,27,105,0.35); }
+    tbody td:first-child { border-top: 0; }
+
+    tbody td::before {
+        content: attr(data-label);
+        font-weight: 800;
+        color: var(--text-dim);
+        font-size: 0.78rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        min-width: 120px;
+    }
+
+    .filter-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
+
+@media (max-width: 480px) {
+    .cards { grid-template-columns: 1fr; }
+    .header { padding: 18px 14px; }
+    .header h1 { font-size: 1.6rem; }
+    .nav-bar { gap: 10px; }
+    .nav-btn { padding: 9px 14px; font-size: 0.82rem; }
+
+    tbody td::before { min-width: 96px; }
+}
+
