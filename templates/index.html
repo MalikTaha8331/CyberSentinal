@@ -21,6 +21,14 @@
         <a href="/"        class="nav-btn active">🛡️ Main Dashboard</a>
         <a href="/live"    class="nav-btn">📡 Live Traffic</a>
         <a href="/history" class="nav-btn">📋 History</a>
+        <a href="/report/pdf" class="nav-btn" style="border-color:#ffd700; color:#ffd700;">
+    📄 Export PDF
+</a>
+        <button onclick="toggleSniffer()"
+                id="sniffer-btn"
+                class="nav-btn sniffer-off">
+            🔴 Sniffer: OFF
+        </button>
     </div>
 
     <!-- Stats Cards -->
@@ -111,23 +119,27 @@
             </button>
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Time</th>
-                    <th>Category</th>
-                    <th>Attack Type</th>
-                    <th>Confidence</th>
-                    <th>Protocol</th>
-                    <th>Src IP</th>
-                    <th>Description</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="alerts-table">
-                <tr><td colspan="7">No alerts yet...</td></tr>
-            </tbody>
-        </table>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Category</th>
+                        <th>Attack Type</th>
+                        <th>Confidence</th>
+                        <th>Protocol</th>
+                        <th>Src IP</th>
+                        <th>Description</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="alerts-table">
+                    <tr><td colspan="7">No alerts yet...</td></tr>
+                </tbody>
+
+            </table>
+        </div>
+
     </div>
 
     <!-- Blocked IPs Panel -->
@@ -310,18 +322,19 @@
     const row = document.createElement('tr');
     row.className = `row-${color}`;
     row.innerHTML = `
-        <td>${new Date().toLocaleTimeString()}</td>
-        <td><span class="badge badge-${color}">${category}</span></td>
-        <td>${attack_icon} ${attack_type}</td>
-        <td>${confidence}%</td>
-        <td>${protocol}</td>
-        <td>${src_ip}</td>
-        <td style="font-size:0.8rem">${description}</td>
-        <td>${blockBtn}</td>
+        <td data-label="Time">${new Date().toLocaleTimeString()}</td>
+        <td data-label="Category"><span class="badge badge-${color}">${category}</span></td>
+        <td data-label="Attack Type">${attack_icon} ${attack_type}</td>
+        <td data-label="Confidence">${confidence}%</td>
+        <td data-label="Protocol">${protocol}</td>
+        <td data-label="Src IP">${src_ip}</td>
+        <td data-label="Description" style="font-size:0.8rem">${description}</td>
+        <td data-label="Action">${blockBtn}</td>
     `;
     tbody.insertBefore(row, tbody.firstChild);
     if (tbody.rows.length > 10) tbody.deleteRow(tbody.rows.length - 1);
 }
+
 
         // ─── Card Filter Function ─────────────────────────
         let allAlerts = [];
@@ -417,11 +430,11 @@
             for (const [ip, info] of Object.entries(data)) {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td><strong>${ip}</strong></td>
-                    <td>${info.time}</td>
-                    <td>${info.reason}</td>
-                    <td>${info.confidence}%</td>
-                    <td>
+                    <td data-label="IP Address"><strong>${ip}</strong></td>
+                    <td data-label="Time">${info.time}</td>
+                    <td data-label="Reason">${info.reason}</td>
+                    <td data-label="Confidence">${info.confidence}%</td>
+                    <td data-label="Action">
                         <button class="btn-unblock-sm" onclick="unblockIP('${ip}')">
                             ✅ Unblock
                         </button>
@@ -430,6 +443,7 @@
                 tbody.appendChild(row);
             }
         }
+
 
         // ─── Block / Unblock Functions ────────────────────────
         async function manualBlock(ip, confidence) {
@@ -582,6 +596,55 @@
             document.getElementById('filter-proto').value = '';
             searchAlerts();
         }
+
+        // ─── Sniffer Control ──────────────────────────────
+        let snifferRunning = false;
+
+        async function checkSnifferStatus() {
+            try {
+                const res    = await fetch('/sniffer/status');
+                const data   = await res.json();
+                snifferRunning = data.running;
+                updateSnifferBtn();
+            } catch(e) {}
+        }
+
+        function updateSnifferBtn() {
+            const btn = document.getElementById('sniffer-btn');
+            if (!btn) return;
+            if (snifferRunning) {
+                btn.textContent  = '🟢 Sniffer: ON';
+                btn.className    = 'nav-btn sniffer-on';
+            } else {
+                btn.textContent  = '🔴 Sniffer: OFF';
+                btn.className    = 'nav-btn sniffer-off';
+            }
+        }
+
+        async function toggleSniffer() {
+            const endpoint = snifferRunning
+                ? '/sniffer/stop'
+                : '/sniffer/start';
+
+            try {
+                const res  = await fetch(endpoint, { method: 'POST' });
+                const data = await res.json();
+
+                if (data.success) {
+                    snifferRunning = !snifferRunning;
+                    updateSnifferBtn();
+                    alert(data.message);
+                } else {
+                    alert('⚠️ ' + data.message);
+                }
+            } catch(e) {
+                alert('Error: ' + e);
+            }
+        }
+
+        // Check sniffer status every 5 seconds
+        setInterval(checkSnifferStatus, 5000);
+        checkSnifferStatus();
     </script>
 </body>
 </html>
