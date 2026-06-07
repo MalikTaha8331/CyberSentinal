@@ -11,18 +11,7 @@
 
 ---
 
-## 📸 Screenshots
 
-### Main Dashboard
-![CyberSentinel Dashboard](docs/screenshots/dashboard.png)
-
-### Live Traffic Monitor
-![Live Traffic](docs/screenshots/live_traffic.png)
-
-### Login Page
-![Login](docs/screenshots/login.png)
-
----
 
 ## 🎯 Features
 
