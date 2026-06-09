@@ -10,7 +10,7 @@
 > Real-time AI-powered network intrusion detection and prevention system with auto-blocking, live dashboard, email alerts, and GeoIP tracking.
 
 ---
-google-site-verification: google906af10733687808.html
+<meta name="google-site-verification" content="SAmMl5p-xCPvJW0ZWkA-EeT5lpd7HsxweYzBtyJZUlc" />
 
 
 ## 🎯 Features
