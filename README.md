@@ -8,7 +8,12 @@
 ![Accuracy](https://img.shields.io/badge/Accuracy-99.92%25-gold?style=for-the-badge)
 
 > Real-time AI-powered network intrusion detection and prevention system with auto-blocking, live dashboard, email alerts, and GeoIP tracking.
+<!-- SEO Keywords -->
+> **CyberSentinel** | AI IDS IPS | Intrusion Detection System Python | 
+> Network Security ML | Pakistani Cybersecurity Project | 
+> Real-time Attack Detection | MalikTaha8331 GitHub
 
+# ⚔️ CyberSentinel
 ---
 <meta name="google-site-verification" content="SAmMl5p-xCPvJW0ZWkA-EeT5lpd7HsxweYzBtyJZUlc" />
 
