@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ⚔️ CyberSentinel
 ### AI-Powered Intrusion Detection & Prevention System
 
@@ -497,3 +498,12 @@ MIT License — free to use, modify and distribute.
   <br>
   <sub>Built with Python, Flask, Scikit-learn, TensorFlow, Scapy & Chart.js</sub>
 </div>
+=======
+# 🛡️ AI-Powered Intrusion Detection & Prevention System
+
+Real-Time Network Threat Detection using Machine Learning
+
+## ⚡ Quick Install
+
+### Windows
+>>>>>>> 04cd25b (Add models and data via Git LFS)
